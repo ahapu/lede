@@ -12,19 +12,23 @@
 #include <dt-bindings/leds/common.h>
 #include <dt-bindings/pinctrl/rockchip.h>
 #include <dt-bindings/soc/rockchip,vop2.h>
-#include "rk3568.dtsi"
+#include "rk3568-lubancat.dtsi"
 
 / {
 	aliases {
 		mmc0 = &sdmmc0;
 		mmc1 = &sdhci;
+
+		led-boot = &power_led;
+		led-failsafe = &power_led;
+		led-running = &power_led;
+		led-upgrade = &power_led;
 	};
 
 	chosen: chosen {
 		stdout-path = "serial2:1500000n8";
 	};
 
-#ifdef DTS_NO_LEGACY
 	hdmi-con {
 		compatible = "hdmi-connector";
 		type = "a";
@@ -35,7 +39,6 @@
 			};
 		};
 	};
-#endif
 
 	vdd_usbc: vdd-usbc-regulator {
 		compatible = "regulator-fixed";
@@ -162,7 +165,6 @@
 	cpu-supply = <&vdd_cpu>;
 };
 
-#ifdef DTS_NO_LEGACY
 &gpu {
 	mali-supply = <&vdd_gpu>;
 	status = "okay";
@@ -189,7 +191,6 @@
 &hdmi_sound {
 	status = "okay";
 };
-#endif
 
 &i2c0 {
 	status = "okay";
@@ -236,6 +237,7 @@
 				regulator-name = "vdd_logic";
 				regulator-always-on;
 				regulator-boot-on;
+				regulator-init-microvolt = <900000>;
 				regulator-initial-mode = <0x2>;
 				regulator-min-microvolt = <500000>;
 				regulator-max-microvolt = <1350000>;
@@ -249,6 +251,7 @@
 			vdd_gpu: DCDC_REG2 {
 				regulator-name = "vdd_gpu";
 				regulator-always-on;
+				regulator-init-microvolt = <900000>;
 				regulator-initial-mode = <0x2>;
 				regulator-min-microvolt = <500000>;
 				regulator-max-microvolt = <1350000>;
@@ -272,6 +275,7 @@
 
 			vdd_npu: DCDC_REG4 {
 				regulator-name = "vdd_npu";
+				regulator-init-microvolt = <900000>;
 				regulator-initial-mode = <0x2>;
 				regulator-min-microvolt = <500000>;
 				regulator-max-microvolt = <1350000>;
@@ -437,11 +441,9 @@
 	};
 };
 
-#ifdef DTS_NO_LEGACY
 &i2s0_8ch {
 	status = "okay";
 };
-#endif
 
 &pcie30phy {
 	data-lanes = <1 2>;
@@ -481,10 +483,6 @@
 	vccio5-supply = <&vcc_3v3>;
 	vccio6-supply = <&vcc_1v8>;
 	vccio7-supply = <&vcc_3v3>;
-	status = "okay";
-};
-
-&rng {
 	status = "okay";
 };
 
@@ -579,7 +577,6 @@
 	status = "okay";
 };
 
-#ifdef DTS_NO_LEGACY
 &vop {
 	assigned-clocks = <&cru DCLK_VOP0>, <&cru DCLK_VOP1>;
 	assigned-clock-parents = <&pmucru PLL_HPLL>, <&cru PLL_VPLL>;
@@ -596,4 +593,3 @@
 		remote-endpoint = <&hdmi_in_vp0>;
 	};
 };
-#endif

@@ -8,45 +8,47 @@ rockchip_setup_interfaces()
 	local board="$1"
 
 	case "$board" in
-	advantech,rsb4810|\
-	ariaboard,photonicat|\
-	dilusense,dlfr100|\
-	ezpro,mrkaio-m68s|\
-	ezpro,mrkaio-m68s-plus|\
+	embedfire,doornet1|\
+	embedfire,doornet2|\
+	embedfire,lubancat-1n|\
+	embedfire,lubancat-2|\
+	embedfire,lubancat-5|\
 	hinlink,opc-h66k|\
 	friendlyarm,nanopi-r2c|\
 	friendlyarm,nanopi-r2s|\
 	friendlyarm,nanopi-r4s|\
 	friendlyarm,nanopi-r4se|\
-	rocktech,mpc1903|\
-	sharevdi,h3399pc|\
-	sharevdi,guangmiao-g4c|\
-	xunlong,orangepi-r1-plus|\
-	xunlong,orangepi-r1-plus-lts)
+	friendlyarm,nanopi-r5c|\
+	friendlyarm,nanopc-t6|\
+	friendlyarm,nanopi-r6c)
 		ucidef_set_interfaces_lan_wan 'eth1' 'eth0'
 		;;
-	fastrhino,r66s|\
-	firefly,rk3568-roc-pc|\
-	friendlyarm,nanopi-r5c|\
-	seewo,sv21-rk3568|\
-	radxa,e25)
-		ucidef_set_interfaces_lan_wan 'eth0' 'eth1'
-		;;
-	hinlink,opc-h68k|\
-	fastrhino,r68s)
-		ucidef_set_interfaces_lan_wan 'eth0 eth2 eth3' 'eth1'
-		;;
-	hinlink,opc-h69k|\
+	friendlyarm,nanopi-r6s|\
 	friendlyarm,nanopi-r5s)
 		ucidef_set_interfaces_lan_wan "eth1 eth2" "eth0"
 		;;
-	lyt,t68m)
-		ucidef_set_interfaces_lan_wan 'lan2 lan3 lan4' 'lan1'
+	embedfire,lubancat1)
+		ucidef_set_interfaces_lan_wan "eth0" "wwan0"
+		;;
+	hinlink,opc-h68k|\
+	hinlink,opc-h69k|\
+	embedfire,lubancat-2n)
+		ucidef_set_interfaces_lan_wan "eth1 eth2 eth3" "eth0"
+		;;
+	hinlink,h88k)
+		ucidef_set_interfaces_lan_wan "eth1 eth2 eth3 eth4" "eth0"
 		;;
 	*)
 		ucidef_set_interface_lan 'eth0'
 		;;
 	esac
+}
+
+generate_mac_from_mmc_cid()
+{
+	local sd_hash=$(sha256sum /sys/class/block/mmcblk*/device/cid | head -n 1)
+	local mac_base=$(macaddr_canonicalize "$(echo "${sd_hash}" | dd bs=1 count=12 2>/dev/null)")
+	echo "$(macaddr_unsetbit_mc "$(macaddr_setbit_la "${mac_base}")")"
 }
 
 nanopi_r4s_get_mac()
@@ -61,7 +63,7 @@ nanopi_r4s_get_mac()
 			address=$(macaddr_setbit_la "$address")
 		fi
 	else
-		address=$(macaddr_generate_from_mmc_cid mmcblk1)
+		address=$(generate_mac_from_mmc_cid)
 		if [ "$interface" = "lan" ]; then
 			address=$(macaddr_add "$address" 1)
 		fi
@@ -78,46 +80,31 @@ rockchip_setup_macs()
 	local label_mac=""
 
 	case "$board" in
-	advantech,rsb4810|\
-	ariaboard,photonicat|\
-	codinge,xiaobao-nas-v1|\
-	dilusense,dlfr100|\
-	ezpro,mrkaio-m68s|\
-	ezpro,mrkaio-m68s-plus|\
-	fastrhino,r66s|\
-	fastrhino,r68s|\
-	firefly,rk3568-roc-pc|\
-	friendlyarm,nanopi-r2c|\
-	friendlyarm,nanopi-r2s|\
+	embedfire,doornet1|\
+	embedfire,doornet2|\
+	embedfire,lubancat-1|\
+	embedfire,lubancat-1n|\
+	embedfire,lubancat-2|\
+	embedfire,lubancat-2n|\
+	embedfire,lubancat-5|\
 	hinlink,opc-h66k|\
 	hinlink,opc-h68k|\
 	hinlink,opc-h69k|\
-	rocktech,mpc1903|\
-	sharevdi,h3399pc)
-		wan_mac=$(macaddr_generate_from_mmc_cid mmcblk0)
-		lan_mac=$(macaddr_add "$wan_mac" +1)
-		;;
-	friendlyarm,nanopi-r4s|\
-	friendlyarm,nanopi-r4se)
-		wan_mac=$(nanopi_r4s_get_mac wan)
-		lan_mac=$(nanopi_r4s_get_mac lan)
-		;;
+	hinlink,h88k|\
+	friendlyarm,nanopi-r2c|\
+	friendlyarm,nanopi-r2s|\
 	friendlyarm,nanopi-r5c|\
 	friendlyarm,nanopi-r5s|\
-	sharevdi,guangmiao-g4c|\
-	seewo,sv21-rk3568)
-		wan_mac=$(macaddr_generate_from_mmc_cid mmcblk1)
+	friendlyarm,nanopc-t6|\
+	friendlyarm,nanopi-r6s|\
+	friendlyarm,nanopi-r6c)
+		wan_mac=$(generate_mac_from_mmc_cid)
 		lan_mac=$(macaddr_add "$wan_mac" +1)
 		;;
-	lyt,t68m)
-		addr=$(cat /sys/class/net/eth2/address)
-		ip link set dev eth0 address $(macaddr_add $addr -2)
-		ip link set dev eth1 address $(macaddr_add $addr -1)
-		;;
-	xunlong,orangepi-r1-plus|\
-	xunlong,orangepi-r1-plus-lts)
-		lan_mac=$(cat /sys/class/net/eth1/address)
-		wan_mac=$(macaddr_add "$lan_mac" -1)
+	friendlyarm,nanopi-r4se|\
+	friendlyarm,nanopi-r4s)
+		wan_mac=$(nanopi_r4s_get_mac wan)
+		lan_mac=$(nanopi_r4s_get_mac lan)
 		;;
 	esac
 
@@ -131,5 +118,5 @@ board=$(board_name)
 rockchip_setup_interfaces $board
 rockchip_setup_macs $board
 board_config_flush
-
+wifi config && wifi
 exit 0

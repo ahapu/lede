@@ -78,6 +78,7 @@
 		reg = <1>;
 		pinctrl-0 = <&eth_phy0_reset_pin>;
 		pinctrl-names = "default";
+		realtek,led-data = <0x6d60>;
 	};
 };
 

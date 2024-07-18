@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 // Copyright (c) 2022 AmadeusGhost <amadeus@jmu.edu.cn>
 
+/dts-v1/;
 #include <dt-bindings/gpio/gpio.h>
+#include <dt-bindings/pwm/pwm.h>
+#include <dt-bindings/leds/common.h>
 #include <dt-bindings/input/input.h>
 #include <dt-bindings/pinctrl/rockchip.h>
 #include <dt-bindings/soc/rockchip,vop2.h>
@@ -9,8 +12,8 @@
 
 / {
 	aliases {
-		mmc0 = &sdhci;
-		mmc1 = &sdmmc0;
+		mmc0 = &sdmmc0;
+		mmc1 = &sdhci;
 
 		led-boot = &led_work;
 		led-failsafe = &led_work;
@@ -31,6 +34,19 @@
 				remote-endpoint = <&hdmi_out_con>;
 			};
 		};
+	};
+
+	pwm-fan {
+		compatible = "pwm-fan";
+		cooling-levels = <0 100 150 200 255>;
+		#cooling-cells = <2>;
+		pwms = <&pwm0 0 50000 0>;
+		rockchip,temp-trips = <
+			50000	1
+			55000	2
+			60000	3
+			65000	4
+		>;
 	};
 
 	keys {
@@ -118,12 +134,12 @@
 		vin-supply = <&vcc5v0_usb>;
 	};
 
-	vcc3v3_pcie: vcc3v3-pcie {
+	vcc3v3_pcie: gpio-regulator {
 		compatible = "regulator-fixed";
-		enable-active-high;
+		regulator-name = "vcc3v3_pcie";
 		regulator-min-microvolt = <3300000>;
 		regulator-max-microvolt = <3300000>;
-		regulator-name = "vcc3v3_pcie";
+		enable-active-high;
 		startup-delay-us = <5000>;
 		vin-supply = <&vcc5v0_sys>;
 	};
@@ -140,13 +156,6 @@
 		simple-audio-card,codec {
 			sound-dai = <&rk809>;
 		};
-	};
-
-	pwm-fan {
-		compatible = "pwm-fan";
-		cooling-levels = <0 100 150 200 255>;
-		#cooling-cells = <2>;
-		pwms = <&pwm0 0 50000 0>;
 	};
 };
 
@@ -255,6 +264,7 @@
 			vdd_logic: DCDC_REG1 {
 				regulator-always-on;
 				regulator-boot-on;
+				regulator-init-microvolt = <900000>;
 				regulator-initial-mode = <0x2>;
 				regulator-min-microvolt = <500000>;
 				regulator-max-microvolt = <1350000>;
@@ -268,6 +278,7 @@
 
 			vdd_gpu: DCDC_REG2 {
 				regulator-always-on;
+				regulator-init-microvolt = <900000>;
 				regulator-initial-mode = <0x2>;
 				regulator-min-microvolt = <500000>;
 				regulator-max-microvolt = <1350000>;
@@ -291,6 +302,7 @@
 			};
 
 			vdd_npu: DCDC_REG4 {
+				regulator-init-microvolt = <900000>;
 				regulator-initial-mode = <0x2>;
 				regulator-min-microvolt = <500000>;
 				regulator-max-microvolt = <1350000>;
@@ -458,7 +470,6 @@
 
 &pcie2x1 {
 	reset-gpios = <&gpio2 RK_PD6 GPIO_ACTIVE_HIGH>;
-	vpcie3v3-supply = <&vcc3v3_pcie>;
 	status = "okay";
 };
 
@@ -467,8 +478,12 @@
 	status = "okay";
 };
 
+&pcie30phy {
+	status = "okay";
+};
+
 &pcie3x1 {
-	num-lanes = <1>;
+	rockchip,bifurcation;
 	reset-gpios = <&gpio3 RK_PA4 GPIO_ACTIVE_HIGH>;
 	vpcie3v3-supply = <&vcc3v3_pcie>;
 	status = "okay";
@@ -478,15 +493,15 @@
 		#address-cells = <3>;
 		#size-cells = <2>;
 
-		rtl8125_1: pcie-eth@10,0 {
-			compatible = "pci10ec,8125";
+		rtl8125_1: pcie@10,0 {
 			reg = <0x000000 0 0 0 0>;
 		};
 	};
 };
 
 &pcie3x2 {
-	num-lanes = <1>;
+	rockchip,bifurcation;
+	rockchip,init-delay-ms = <100>;
 	reset-gpios = <&gpio2 RK_PD0 GPIO_ACTIVE_HIGH>;
 	vpcie3v3-supply = <&vcc3v3_pcie>;
 	status = "okay";
@@ -496,8 +511,7 @@
 		#address-cells = <3>;
 		#size-cells = <2>;
 
-		rtl8125_2: pcie-eth@20,0 {
-			compatible = "pci10ec,8125";
+		rtl8125_2: pcie@20,0 {
 			reg = <0x000000 0 0 0 0>;
 		};
 	};
@@ -551,6 +565,8 @@
 };
 
 &pwm0 {
+	gpios = <&gpio0 RK_PB7 GPIO_ACTIVE_LOW>;
+	pinctrl-0 = <&pwm0m0_pins>;
 	status = "okay";
 };
 
@@ -583,7 +599,6 @@
 	disable-wp;
 	pinctrl-names = "default";
 	pinctrl-0 = <&sdmmc0_bus4 &sdmmc0_clk &sdmmc0_cmd &sdmmc0_det>;
-	sd-uhs-sdr50;
 	vmmc-supply = <&vcc3v3_sd>;
 	vqmmc-supply = <&vccio_sd>;
 	status = "okay";
